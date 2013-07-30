@@ -13,7 +13,31 @@ import org.jblas.util.Logger;
  * Date: Oct 24, 2012
  */
 class NativeBlasLibraryLoader {
+  static public boolean tryLoad(String filename) {
+    try {
+      System.load(filename);
+    } catch (Exception e) {
+      return false;
+    } catch (UnsatisfiedLinkError e) {
+      return false;
+    }
+
+    return true;
+  }
+
   static void loadLibraryAndCheckErrors() {
+    String name = System.getProperty("os.name");
+
+    if (name.equals("Linux")) {
+      /*
+       * Check for 64-bit library availability
+       * prior to 32-bit library availability.
+       */
+      if (tryLoad("/usr/lib64/jblas/libjblas.so") ||
+          tryLoad("/usr/lib/jblas/libjblas.so"))
+        return;
+    }
+
     try {
       try {
         // Try to load it first, probably it's in the path
@@ -38,7 +62,6 @@ class NativeBlasLibraryLoader {
       NativeBlas.dgemm('N', 'N', 1, 1, 1, 1.0, a, 0, 1, a, 0, 1, 1.0, a, 0, 1);
     } catch (UnsatisfiedLinkError e) {
       String arch = System.getProperty("os.arch");
-      String name = System.getProperty("os.name");
 
       if (name.startsWith("Windows") && e.getMessage().contains("Can't find dependent libraries")) {
         System.err.println("On Windows, you need some additional support libraries.\n" +
