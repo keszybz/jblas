@@ -1,0 +1,70 @@
+From 33af8b77d0a4abfd5c6ecc6627576d3199755dbc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Tue, 30 Jul 2013 14:59:00 -0400
+Subject: [PATCH] Try to load libraries directly on Linux
+
+Fedora Packaging Guidelines for Java require the use of
+System.load() instead of System.loadLibrary(). Also, the
+name of the library is fixed. So the whole process of
+guessing the architecture and path can be sidestepped.
+
+Actual atlas library that is loaded is determined at runtime,
+based what is installed. Thus package dependencies determine
+the outcome, and there's no need to check the architecture.
+
+Unfortunately there doesn't seem to be a way to depend
+on any version of the atlas-*-devel headers, so during
+build, atlas-devel is required. On installation however,
+uninstalling atlas and installing e.g. atlas-sse3 will give
+a nice speedup.
+---
+ .../java/org/jblas/NativeBlasLibraryLoader.java    | 25 +++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/src/main/java/org/jblas/NativeBlasLibraryLoader.java b/src/main/java/org/jblas/NativeBlasLibraryLoader.java
+index 3460bfb..0fa0f04 100644
+--- a/src/main/java/org/jblas/NativeBlasLibraryLoader.java
++++ b/src/main/java/org/jblas/NativeBlasLibraryLoader.java
+@@ -14,7 +14,31 @@ import org.jblas.util.Logger;
+  * Time: 3:15 PM
+  */
+ class NativeBlasLibraryLoader {
++  static public boolean tryLoad(String filename) {
++    try {
++      System.load(filename);
++    } catch (Exception e) {
++      return false;
++    } catch (UnsatisfiedLinkError e) {
++      return false;
++    }
++
++    return true;
++  }
++
+   static void loadLibraryAndCheckErrors() {
++    String name = System.getProperty("os.name");
++
++    if (name.equals("Linux")) {
++      /*
++       * Check for 64-bit library availability
++       * prior to 32-bit library availability.
++       */
++      if (tryLoad("/usr/lib64/jblas/libjblas.so") ||
++          tryLoad("/usr/lib/jblas/libjblas.so"))
++        return;
++    }
++
+     try {
+       try {
+         loadDependentLibraries();
+@@ -32,7 +56,6 @@ class NativeBlasLibraryLoader {
+       NativeBlas.dgemm('N', 'N', 1, 1, 1, 1.0, a, 0, 1, a, 0, 1, 1.0, a, 0, 1);
+     } catch (UnsatisfiedLinkError e) {
+       String arch = System.getProperty("os.arch");
+-      String name = System.getProperty("os.name");
+ 
+       if (name.startsWith("Windows") && e.getMessage().contains("Can't find dependent libraries")) {
+         System.err.println("On Windows, you need some additional support libraries.\n" +
+-- 
+1.8.3.1
+
