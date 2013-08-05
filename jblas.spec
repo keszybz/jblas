@@ -1,7 +1,7 @@
 Summary: Java bindings for BLAS
 Name: jblas
 Version: 1.2.3
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: BSD
 Group: System Environment/Libraries
 URL: http://jblas.org
@@ -75,12 +75,15 @@ install -pm 644 pom.xml $RPM_BUILD_ROOT%{_mavenpomdir}/JPP-%{name}.pom
 %{_mavenpomdir}/JPP-%{name}.pom
 %{_mavendepmapfragdir}/%{name}
 %{_jnidir}/%{name}.jar
-%{_libdir}/%{name}/lib%{name}.so
+%{_libdir}/%{name}
 %doc COPYING AUTHORS RELEASE_NOTES
 
 %files javadoc
 %{_javadocdir}/%{name}
 
 %changelog
-* Tue Jul 30 2013 Zbigniew Jedrzejewski-Szmek <zbyszek@in.waw.pl> - 1.2.3-1
+* Mon Aug 05 2013 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 1.2.3-2
+- Make /usr/lib64/jblas owned.
+
+* Tue Jul 30 2013 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 1.2.3-1
 - Initial packaging.
